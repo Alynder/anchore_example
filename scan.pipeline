@@ -1,3 +1,41 @@
+#!groovy
+ 
+pipeline {
+	agent {
+kubernetes {
+      label 'dind'
+      defaultContainer 'dind'
+      yaml """
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: jenkins-custom-pod
+  annotations:
+    iam.amazonaws.com/role: jenkins-dev-pecs-iam-role
+spec:
+  containers:
+  - name: dind
+    image: docker:latest
+    command:
+    - cat
+    tty: true
+    volumeMounts:
+     - mountPath: '/var/run/docker.sock'
+       name: docker-socket-volume
+    securityContext:
+      privileged: true
+  volumes:
+    - name: docker-socket-volume
+      hostPath:
+        path: '/var/run/docker.sock'
+        type: File
+"""
+ 
+        }
+    }
+stages {
+ 
 stage('Build') {
   steps {
            sh 'echo "FROM mysql:latest" > Dockerfile'
@@ -6,6 +44,13 @@ stage('Build') {
      sh 'docker build . -t test:latest'
       }
   }
+  stage ('Push-hub') {
+  steps {
+      sh "docker login -u username -p password"
+      sh "docker tag test:latest jrepka/test:latest"
+      sh "docker push jrepka/test:latest"
+  }
+}
 
 stage('Analyze') {
   steps {
@@ -13,9 +58,5 @@ stage('Analyze') {
     anchore name: 'anchore_images', policyBundleId : 'default'
 }
 }
-stage ('Push-hub') {
-  steps {
-      sh "docker tag test:latest jrepka/test:latest"
-      sh "docker push jrepka/test:latest"
-  }
+}
 }
