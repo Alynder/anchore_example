@@ -11,8 +11,6 @@ kind: Pod
 metadata:
   labels:
     app: jenkins-custom-pod
-  annotations:
-    iam.amazonaws.com/role: jenkins-dev-pecs-iam-role
 spec:
   containers:
   - name: dind
@@ -46,7 +44,7 @@ stage('Build') {
   }
   stage ('Push-hub') {
   steps {
-      sh "docker login -u username -p password"
+      sh "docker login -u user -p password"
       sh "docker tag test:latest jrepka/test:latest"
       sh "docker push jrepka/test:latest"
   }
@@ -55,7 +53,7 @@ stage('Build') {
 stage('Analyze') {
   steps {
     writeFile file: 'anchore_images', text: "jrepka/test:latest"
-    anchore name: 'anchore_images', policyBundleId : 'default'
+    anchore name: 'anchore_images', policyBundleId : '2c53a13c-1765-11e8-82ef-23527761d060'
 }
 }
 }
