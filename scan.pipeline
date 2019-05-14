@@ -1,0 +1,21 @@
+stage('Build') {
+  steps {
+           sh 'echo "FROM mysql:latest" > Dockerfile'
+           sh 'echo "MAINTAINER jrepka" >> Dockerfile'
+           sh 'echo "RUN mkdir -p /tmp/test/dir" >> Dockerfile'
+     sh 'docker build . -t test:latest'
+      }
+  }
+
+stage('Analyze') {
+  steps {
+    writeFile file: 'anchore_images', text: "jrepka/test:latest"
+    anchore name: 'anchore_images', policyBundleId : 'default'
+}
+}
+stage ('Push-hub') {
+  steps {
+      sh "docker tag test:latest jrepka/test:latest"
+      sh "docker push jrepka/test:latest"
+  }
+}
